@@ -1,0 +1,2 @@
+-- Clean raw price records, standardize dates and symbols, and remove invalid OHLCV rows.
+-- Full cleaning logic will be implemented in a later project phase.

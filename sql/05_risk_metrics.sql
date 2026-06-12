@@ -1,0 +1,2 @@
+-- Derive drawdown, downside-risk, and tail-risk metrics for each technology stock.
+-- Full risk metric queries will be implemented in a later project phase.

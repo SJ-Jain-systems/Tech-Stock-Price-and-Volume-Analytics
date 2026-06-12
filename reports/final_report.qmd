@@ -1,0 +1,26 @@
+---
+title: "Bayesian Tech Equity Risk Lab"
+format:
+  html:
+    toc: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+---
+
+# Executive Summary
+
+This Quarto report will summarize data quality, feature engineering, Bayesian risk modeling, and portfolio findings for the technology equity universe.
+
+# Data and Methods
+
+Future sections will describe the raw OHLCV dataset, DuckDB transformations, Bayesian model assumptions, posterior diagnostics, and portfolio construction workflow.
+
+# Results
+
+Future sections will include report-ready figures, uncertainty intervals, risk summaries, and portfolio analytics.
+
+# Conclusions
+
+Future sections will document practical insights, modeling limitations, and recommended next steps.

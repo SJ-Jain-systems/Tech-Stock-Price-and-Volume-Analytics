@@ -1,0 +1,27 @@
+# Core data analysis
+pandas>=2.2
+numpy>=1.26
+scipy>=1.12
+scikit-learn>=1.4
+
+# Analytical database and SQL workflow
+duckdb>=1.0
+
+# Bayesian modeling and diagnostics
+pymc>=5.10
+arviz>=0.17
+
+# Visualization
+matplotlib>=3.8
+seaborn>=0.13
+plotly>=5.20
+
+# Notebook and reporting workflow
+jupyter>=1.0
+jupyterlab>=4.0
+ipykernel>=6.29
+nbformat>=5.9
+quarto>=0.1.0
+
+# Developer utilities
+python-dotenv>=1.0

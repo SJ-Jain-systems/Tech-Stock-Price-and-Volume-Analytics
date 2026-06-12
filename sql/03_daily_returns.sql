@@ -1,0 +1,2 @@
+-- Compute adjusted-close daily returns by symbol for downstream risk modeling.
+-- Full return calculations will be implemented in a later project phase.

@@ -1,0 +1,2 @@
+-- Generate rolling volatility, moving-average, liquidity, and momentum features.
+-- Full rolling feature logic will be implemented in a later project phase.
