@@ -1,0 +1,56 @@
+# Local environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Local raw and derived data
+/data/raw/*
+/data/processed/*
+/data/database/*
+*.duckdb
+*.db
+*.sqlite
+*.sqlite3
+
+# Model artifacts and posterior samples
+/models/posterior_samples/*
+*.nc
+*.pkl
+*.pickle
+*.joblib
+
+# Generated reports and figures
+/reports/figures/*
+*.html
+*.pdf
+
+# Keep scaffold directories in git
+!/data/raw/.gitkeep
+!/data/processed/.gitkeep
+!/data/database/.gitkeep
+!/models/posterior_samples/.gitkeep
+!/reports/figures/.gitkeep
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

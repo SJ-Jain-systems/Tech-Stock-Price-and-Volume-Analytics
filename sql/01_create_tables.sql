@@ -1,0 +1,2 @@
+-- Create base DuckDB tables for raw and cleaned technology equity OHLCV data.
+-- Full DDL will be implemented in a later project phase.

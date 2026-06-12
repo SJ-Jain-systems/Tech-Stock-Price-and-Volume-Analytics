@@ -1,0 +1,2 @@
+-- Prepare expected-return, covariance, and risk-input tables for portfolio modeling.
+-- Full portfolio input queries will be implemented in a later project phase.
