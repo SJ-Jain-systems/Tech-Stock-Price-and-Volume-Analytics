@@ -80,6 +80,33 @@ def _posterior_variable_samples(
     return np.asarray(samples, dtype="float64")
 
 
+def _posterior_regime_variable_samples(
+    idata: az.InferenceData,
+    variable: str,
+    n_regimes: int = 2,
+) -> np.ndarray:
+    """Extract posterior regime samples as a ``(n_regimes, n_samples)`` array."""
+    if not hasattr(idata, "posterior") or variable not in idata.posterior:
+        raise ValueError(f"InferenceData posterior does not contain {variable!r}")
+
+    draws = idata.posterior[variable]
+    stacked = draws.stack(sample=("chain", "draw"))
+    regime_dims = [dim for dim in stacked.dims if dim != "sample"]
+    if len(regime_dims) != 1:
+        raise ValueError(
+            f"Expected {variable!r} to have exactly one regime dimension; "
+            f"found dimensions {draws.dims}."
+        )
+
+    samples = stacked.transpose(regime_dims[0], "sample").values
+    if samples.shape[0] != n_regimes:
+        raise ValueError(
+            f"{variable!r} has {samples.shape[0]} regimes, but {n_regimes} "
+            "regimes were expected."
+        )
+    return np.asarray(samples, dtype="float64")
+
+
 def prepare_downside_data(
     df: pd.DataFrame,
     threshold: float = -0.02,
@@ -266,6 +293,69 @@ def build_hierarchical_student_t_return_model(
     return model
 
 
+def build_two_regime_market_model(
+    market_returns: np.ndarray | Sequence[float],
+) -> pm.Model:
+    """Build a two-regime Bayesian mixture model for market log returns.
+
+    ``market_returns`` should be a one-dimensional series of daily market log
+    returns, such as the equal-weight average daily log return across available
+    tech stocks. The model approximates low- and high-volatility market regimes
+    with two Student-t mixture components. It is a static mixture approximation,
+    not a hidden Markov model, so observations are exchangeable conditional on
+    the mixture probabilities.
+    """
+    returns_array = np.asarray(market_returns, dtype="float64")
+
+    if returns_array.ndim != 1:
+        raise ValueError("market_returns must be a one-dimensional array.")
+    if returns_array.size == 0:
+        raise ValueError("At least one market return observation is required.")
+    if not np.isfinite(returns_array).all():
+        raise ValueError("market_returns must contain only finite values.")
+
+    coords = {"regime": np.arange(2), "obs_id": np.arange(returns_array.size)}
+
+    with pm.Model(coords=coords) as model:
+        regime_probs = pm.Dirichlet(
+            "regime_probs",
+            a=np.array([1.0, 1.0]),
+            dims="regime",
+        )
+        mu_regime = pm.Normal(
+            "mu_regime",
+            mu=0.0,
+            sigma=0.002,
+            dims="regime",
+        )
+        sigma_regime = pm.HalfNormal(
+            "sigma_regime",
+            sigma=0.03,
+            dims="regime",
+        )
+
+        # Estimate tail thickness. Adding two guarantees nu > 2, giving each
+        # Student-t component finite variance while still allowing fat tails.
+        nu_minus_two = pm.Exponential("nu_minus_two", lam=1 / 10)
+        nu = pm.Deterministic("nu", nu_minus_two + 2)
+
+        component_returns = pm.StudentT.dist(
+            nu=nu,
+            mu=mu_regime,
+            sigma=sigma_regime,
+            shape=2,
+        )
+        pm.Mixture(
+            "returns",
+            w=regime_probs,
+            comp_dists=component_returns,
+            observed=returns_array,
+            dims="obs_id",
+        )
+
+    return model
+
+
 def build_bayesian_bad_day_model(
     y: np.ndarray | Sequence[int],
     stock_idx: np.ndarray | Sequence[int],
@@ -417,6 +507,53 @@ def posterior_stock_summary(
                     "q95": float(quantiles[2, idx]),
                 }
             )
+
+    return pd.DataFrame(rows)
+
+
+def summarize_regime_model(idata: az.InferenceData) -> pd.DataFrame:
+    """Summarize a fitted two-regime market model with stable regime labels.
+
+    Mixture models can swap component labels across posterior draws. To make the
+    summary interpretable, this function sorts regimes independently within each
+    posterior draw by ``sigma_regime``. Summary row ``Regime 0`` is therefore the
+    lower-volatility component and ``Regime 1`` is the higher-volatility
+    component, with means and probabilities reordered by the same draw-specific
+    ordering.
+    """
+    mu_samples = _posterior_regime_variable_samples(idata, "mu_regime")
+    sigma_samples = _posterior_regime_variable_samples(idata, "sigma_regime")
+    probability_samples = _posterior_regime_variable_samples(idata, "regime_probs")
+
+    sigma_order = np.argsort(sigma_samples, axis=0)
+    sorted_mu = np.take_along_axis(mu_samples, sigma_order, axis=0)
+    sorted_sigma = np.take_along_axis(sigma_samples, sigma_order, axis=0)
+    sorted_probabilities = np.take_along_axis(
+        probability_samples, sigma_order, axis=0
+    )
+
+    rows: list[dict[str, float | int | str]] = []
+    regime_labels = ["low_volatility", "high_volatility"]
+    variables = {
+        "mean_return": sorted_mu,
+        "volatility": sorted_sigma,
+        "regime_probability": sorted_probabilities,
+    }
+
+    for regime_idx, label in enumerate(regime_labels):
+        row: dict[str, float | int | str] = {
+            "regime": regime_idx,
+            "regime_label": label,
+        }
+        for variable_name, samples in variables.items():
+            regime_samples = samples[regime_idx]
+            quantiles = np.quantile(regime_samples, [0.05, 0.50, 0.95])
+            row[f"{variable_name}_mean"] = float(np.mean(regime_samples))
+            row[f"{variable_name}_sd"] = float(np.std(regime_samples, ddof=1))
+            row[f"{variable_name}_q5"] = float(quantiles[0])
+            row[f"{variable_name}_q50"] = float(quantiles[1])
+            row[f"{variable_name}_q95"] = float(quantiles[2])
+        rows.append(row)
 
     return pd.DataFrame(rows)
 
