@@ -16,6 +16,7 @@ import pandas as pd
 import pymc as pm
 
 REQUIRED_RETURN_COLUMNS = {"symbol", "date", "log_return"}
+REQUIRED_DOWNSIDE_COLUMNS = {"symbol", "date", "simple_return"}
 
 
 def _validate_required_columns(df: pd.DataFrame, required_columns: set[str]) -> None:
@@ -77,6 +78,58 @@ def _posterior_variable_samples(
             f"contains {n_symbols} symbols."
         )
     return np.asarray(samples, dtype="float64")
+
+
+def prepare_downside_data(
+    df: pd.DataFrame,
+    threshold: float = -0.02,
+) -> tuple[np.ndarray, np.ndarray, dict[int, str], pd.DataFrame]:
+    """Clean daily simple returns and encode downside events for modeling.
+
+    Parameters
+    ----------
+    df:
+        Daily returns table with ``symbol``, ``date``, and ``simple_return``
+        columns.
+    threshold:
+        Simple-return cutoff used to identify a bad day. Observations with
+        ``simple_return <= threshold`` are encoded as one; all higher valid
+        returns are encoded as zero.
+
+    Returns
+    -------
+    tuple
+        ``(y, stock_idx, symbol_lookup, modeling_df)`` where ``y`` is a binary
+        integer array of downside indicators, ``stock_idx`` maps each row to a
+        stock, ``symbol_lookup`` maps stock index to symbol, and
+        ``modeling_df`` is the filtered/sorted DataFrame used for modeling.
+    """
+    _validate_required_columns(df, REQUIRED_DOWNSIDE_COLUMNS)
+
+    modeling_df = df.copy()
+    modeling_df["date"] = pd.to_datetime(modeling_df["date"])
+    modeling_df["simple_return"] = pd.to_numeric(
+        modeling_df["simple_return"], errors="coerce"
+    )
+    modeling_df = modeling_df.replace([np.inf, -np.inf], np.nan)
+    modeling_df = modeling_df.dropna(subset=["symbol", "date", "simple_return"])
+    modeling_df = modeling_df.sort_values(["symbol", "date"], kind="mergesort")
+    modeling_df = modeling_df.reset_index(drop=True)
+
+    if modeling_df.empty:
+        raise ValueError("No valid simple_return observations remain after filtering.")
+
+    stock_codes, unique_symbols = pd.factorize(modeling_df["symbol"], sort=True)
+    modeling_df["stock_idx"] = stock_codes.astype("int64")
+    modeling_df["bad_day"] = (modeling_df["simple_return"] <= threshold).astype(
+        "int64"
+    )
+
+    y = modeling_df["bad_day"].to_numpy(dtype="int64")
+    stock_idx = modeling_df["stock_idx"].to_numpy(dtype="int64")
+    symbol_lookup = {idx: symbol for idx, symbol in enumerate(unique_symbols.tolist())}
+
+    return y, stock_idx, symbol_lookup, modeling_df
 
 
 def prepare_returns_for_bayesian_model(
@@ -213,6 +266,61 @@ def build_hierarchical_student_t_return_model(
     return model
 
 
+def build_bayesian_bad_day_model(
+    y: np.ndarray | Sequence[int],
+    stock_idx: np.ndarray | Sequence[int],
+    n_stocks: int,
+) -> pm.Model:
+    """Build a hierarchical Bernoulli model for downside-risk events.
+
+    The model partially pools stock-level log-odds of a bad day toward a shared
+    group log-odds. The stock-level probabilities are exposed as the
+    deterministic variable ``stock_bad_day_probability`` for posterior
+    summaries.
+    """
+    y_array = np.asarray(y, dtype="int64")
+    stock_idx_array = np.asarray(stock_idx, dtype="int64")
+
+    if y_array.ndim != 1:
+        raise ValueError("y must be a one-dimensional array.")
+    if stock_idx_array.ndim != 1:
+        raise ValueError("stock_idx must be a one-dimensional array.")
+    if y_array.size != stock_idx_array.size:
+        raise ValueError("y and stock_idx must have the same length.")
+    if n_stocks < 1:
+        raise ValueError("n_stocks must be at least 1.")
+    if y_array.size == 0:
+        raise ValueError("At least one downside-risk observation is required.")
+    if not np.isin(y_array, [0, 1]).all():
+        raise ValueError("y must contain only binary 0/1 values.")
+    if stock_idx_array.min() < 0 or stock_idx_array.max() >= n_stocks:
+        raise ValueError("stock_idx values must be in the range [0, n_stocks).")
+
+    coords = {"stock": np.arange(n_stocks), "obs_id": np.arange(y_array.size)}
+
+    with pm.Model(coords=coords) as model:
+        group_alpha = pm.Normal("group_alpha", mu=0.0, sigma=2.0)
+        stock_sigma = pm.HalfNormal("stock_sigma", sigma=1.0)
+        stock_alpha_raw = pm.Normal(
+            "stock_alpha_raw", mu=0.0, sigma=1.0, dims="stock"
+        )
+        stock_alpha = pm.Deterministic(
+            "stock_alpha",
+            group_alpha + stock_alpha_raw * stock_sigma,
+            dims="stock",
+        )
+        stock_bad_day_probability = pm.Deterministic(
+            "stock_bad_day_probability",
+            pm.math.sigmoid(stock_alpha),
+            dims="stock",
+        )
+        p = pm.math.sigmoid(stock_alpha[stock_idx_array])
+
+        pm.Bernoulli("y", p=p, observed=y_array, dims="obs_id")
+
+    return model
+
+
 def sample_model(
     model: pm.Model,
     draws: int = 1000,
@@ -230,6 +338,55 @@ def sample_model(
             return_inferencedata=True,
         )
     return idata
+
+
+def posterior_bad_day_summary(
+    idata: az.InferenceData,
+    symbol_lookup: Mapping[int, str] | Sequence[str],
+) -> pd.DataFrame:
+    """Summarize posterior bad-day probability by stock.
+
+    Returns posterior means and 90% credible intervals for each stock's bad-day
+    probability, plus expected annual bad days using 252 trading days per year.
+    """
+    symbols = _normalize_symbol_lookup(symbol_lookup)
+    probability_samples = _posterior_variable_samples(
+        idata, "stock_bad_day_probability", len(symbols)
+    )
+    quantiles = np.quantile(probability_samples, [0.05, 0.95], axis=1)
+    means = np.mean(probability_samples, axis=1)
+
+    return pd.DataFrame(
+        {
+            "symbol": symbols,
+            "mean_bad_day_probability": means.astype("float64"),
+            "bad_day_probability_q5": quantiles[0].astype("float64"),
+            "bad_day_probability_q95": quantiles[1].astype("float64"),
+            "expected_bad_days_per_year": (means * 252).astype("float64"),
+        }
+    )
+
+
+def posterior_probability_highest_bad_day_risk(
+    idata: az.InferenceData,
+    symbol_lookup: Mapping[int, str] | Sequence[str],
+) -> pd.DataFrame:
+    """Compute the probability each stock has the highest bad-day probability."""
+    symbols = _normalize_symbol_lookup(symbol_lookup)
+    probability_samples = _posterior_variable_samples(
+        idata, "stock_bad_day_probability", len(symbols)
+    )
+    highest_risk_idx = np.argmax(probability_samples, axis=0)
+    probabilities = (
+        np.bincount(highest_risk_idx, minlength=len(symbols)) / highest_risk_idx.size
+    )
+
+    return pd.DataFrame(
+        {
+            "symbol": symbols,
+            "probability_highest_bad_day_risk": probabilities.astype("float64"),
+        }
+    )
 
 
 def posterior_stock_summary(
