@@ -9,8 +9,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.config import DUCKDB_PATH, SQL_DIR
-from src.sql_utils import execute_sql_file, get_connection
+from src.config import DUCKDB_PATH, SQL_DIR  # noqa: E402
+from src.sql_utils import execute_sql_file, get_connection  # noqa: E402
 
 ROW_COUNT_OBJECTS: tuple[str, ...] = (
     "clean_prices",

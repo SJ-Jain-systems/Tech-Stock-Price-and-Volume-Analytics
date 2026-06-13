@@ -492,9 +492,7 @@ def summarize_portfolio_weights(weights_df: pd.DataFrame) -> pd.DataFrame:
         raise TypeError("weights_df must be a pandas DataFrame")
 
     weight_columns = [
-        column
-        for column in weights_df.columns
-        if str(column).startswith("weight_")
+        column for column in weights_df.columns if str(column).startswith("weight_")
     ]
     if not weight_columns:
         numeric_columns = weights_df.select_dtypes(include=[np.number]).columns.tolist()

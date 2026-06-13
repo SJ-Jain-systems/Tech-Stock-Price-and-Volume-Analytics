@@ -148,9 +148,7 @@ def prepare_downside_data(
 
     stock_codes, unique_symbols = pd.factorize(modeling_df["symbol"], sort=True)
     modeling_df["stock_idx"] = stock_codes.astype("int64")
-    modeling_df["bad_day"] = (modeling_df["simple_return"] <= threshold).astype(
-        "int64"
-    )
+    modeling_df["bad_day"] = (modeling_df["simple_return"] <= threshold).astype("int64")
 
     y = modeling_df["bad_day"].to_numpy(dtype="int64")
     stock_idx = modeling_df["stock_idx"].to_numpy(dtype="int64")
@@ -317,6 +315,8 @@ def build_two_regime_market_model(
     coords = {"regime": np.arange(2), "obs_id": np.arange(returns_array.size)}
 
     with pm.Model(coords=coords) as model:
+        # The Dirichlet prior places probability mass over the two latent regimes
+        # without forcing either regime to dominate before seeing the data.
         regime_probs = pm.Dirichlet(
             "regime_probs",
             a=np.array([1.0, 1.0]),
@@ -389,17 +389,19 @@ def build_bayesian_bad_day_model(
     coords = {"stock": np.arange(n_stocks), "obs_id": np.arange(y_array.size)}
 
     with pm.Model(coords=coords) as model:
+        # Work on the log-odds scale so probabilities remain between zero and
+        # one after the inverse-logit transform. The group term pools stocks
+        # toward a shared downside-event rate while stock_alpha_raw captures
+        # symbol-specific deviations.
         group_alpha = pm.Normal("group_alpha", mu=0.0, sigma=2.0)
         stock_sigma = pm.HalfNormal("stock_sigma", sigma=1.0)
-        stock_alpha_raw = pm.Normal(
-            "stock_alpha_raw", mu=0.0, sigma=1.0, dims="stock"
-        )
+        stock_alpha_raw = pm.Normal("stock_alpha_raw", mu=0.0, sigma=1.0, dims="stock")
         stock_alpha = pm.Deterministic(
             "stock_alpha",
             group_alpha + stock_alpha_raw * stock_sigma,
             dims="stock",
         )
-        stock_bad_day_probability = pm.Deterministic(
+        pm.Deterministic(
             "stock_bad_day_probability",
             pm.math.sigmoid(stock_alpha),
             dims="stock",
@@ -528,9 +530,7 @@ def summarize_regime_model(idata: az.InferenceData) -> pd.DataFrame:
     sigma_order = np.argsort(sigma_samples, axis=0)
     sorted_mu = np.take_along_axis(mu_samples, sigma_order, axis=0)
     sorted_sigma = np.take_along_axis(sigma_samples, sigma_order, axis=0)
-    sorted_probabilities = np.take_along_axis(
-        probability_samples, sigma_order, axis=0
-    )
+    sorted_probabilities = np.take_along_axis(probability_samples, sigma_order, axis=0)
 
     rows: list[dict[str, float | int | str]] = []
     regime_labels = ["low_volatility", "high_volatility"]

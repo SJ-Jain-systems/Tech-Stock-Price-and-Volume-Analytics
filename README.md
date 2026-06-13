@@ -31,7 +31,7 @@ This project reframes the analysis around risk and uncertainty:
 
 ## 3. Dataset description
 
-The project uses a local CSV dataset named `tech_stocks.csv`. The notebooks prefer `data/raw/tech_stocks.csv` and fall back to the repository-root `tech_stocks.csv` when running from a lightweight clone.
+The project uses a local CSV dataset named `tech_stocks.csv`. Place the file at `data/raw/tech_stocks.csv` before running the scripts or notebooks from a fresh clone.
 
 Expected source columns:
 
@@ -208,7 +208,7 @@ The project computes and analyzes financial quantities that are commonly used in
 ```text
 Bayesian-Tech-Equity-Risk-Lab/
 ├── data/
-│   ├── raw/                         # Optional local raw data staging
+│   ├── raw/                         # Place tech_stocks.csv here locally
 │   ├── processed/                   # Generated feature datasets
 │   └── database/                    # Local DuckDB database files
 ├── models/
@@ -245,7 +245,6 @@ Bayesian-Tech-Equity-Risk-Lab/
 │   ├── bayesian_models.py           # Bayesian modeling helpers
 │   ├── portfolio.py                 # Portfolio analytics helpers
 │   └── visualization.py             # Plotting utilities
-├── tech_stocks.csv                  # Source OHLCV dataset fallback location
 ├── requirements.txt
 └── README.md
 ```
@@ -281,26 +280,20 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 4. Confirm data placement
+### 4. Place the raw dataset
 
-Use either of the following locations:
+Copy the source CSV into the local raw-data directory. Generated data directories are ignored by Git, so create the directory if it is missing in a fresh clone.
 
-```text
-data/raw/tech_stocks.csv
-```
-
-or the repository-root fallback:
-
-```text
-tech_stocks.csv
+```bash
+mkdir -p data/raw data/processed data/database reports/figures models/posterior_samples
+cp /path/to/tech_stocks.csv data/raw/tech_stocks.csv
 ```
 
 ### 5. Run the reproducible script pipeline
 
-The command-line scripts rebuild the DuckDB database, execute the SQL feature pipeline, and export the processed modeling feature dataset. The first script expects the raw CSV at `data/raw/tech_stocks.csv`; if you are using the repository-root fallback dataset, copy it into place first:
+The command-line scripts rebuild the DuckDB database, execute the SQL feature pipeline, and export the processed modeling feature dataset. Run them from the repository root after `data/raw/tech_stocks.csv` is in place:
 
 ```bash
-cp tech_stocks.csv data/raw/tech_stocks.csv
 python scripts/01_build_database.py
 python scripts/02_run_sql_pipeline.py
 python scripts/03_export_processed_features.py

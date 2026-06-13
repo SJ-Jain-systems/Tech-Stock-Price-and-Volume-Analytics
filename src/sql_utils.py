@@ -49,9 +49,7 @@ def get_connection(db_path: str | Path = DUCKDB_PATH) -> DuckDBPyConnection:
     return duckdb.connect(database=str(database_path))
 
 
-def execute_sql_file(
-    connection: DuckDBPyConnection, sql_file_path: str | Path
-) -> None:
+def execute_sql_file(connection: DuckDBPyConnection, sql_file_path: str | Path) -> None:
     """Read a SQL file from disk and execute it against a DuckDB connection.
 
     Parameters

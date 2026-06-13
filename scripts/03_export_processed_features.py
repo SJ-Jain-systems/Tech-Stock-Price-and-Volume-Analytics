@@ -9,8 +9,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.config import DUCKDB_PATH, PROCESSED_FEATURE_PATH
-from src.sql_utils import get_connection
+from src.config import DUCKDB_PATH, PROCESSED_FEATURE_PATH  # noqa: E402
+from src.sql_utils import get_connection  # noqa: E402
 
 EXPORT_QUERY = """
 SELECT

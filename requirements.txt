@@ -26,3 +26,4 @@ quarto>=0.1.0
 # Developer utilities
 python-dotenv>=1.0
 pytest>=8.0
+ruff>=0.6

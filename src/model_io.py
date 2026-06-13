@@ -6,7 +6,6 @@ CSV tables so notebooks can save model outputs using consistent project paths.
 
 from __future__ import annotations
 
-from os import PathLike
 from pathlib import Path
 
 import arviz as az
@@ -24,7 +23,7 @@ def ensure_model_dirs() -> None:
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def save_inference_data(idata: az.InferenceData, path: str | PathLike[str]) -> Path:
+def save_inference_data(idata: az.InferenceData, path: str | Path) -> Path:
     """Save an ArviZ ``InferenceData`` object to a NetCDF file.
 
     Parameters
@@ -45,12 +44,12 @@ def save_inference_data(idata: az.InferenceData, path: str | PathLike[str]) -> P
     return output_path
 
 
-def load_inference_data(path: str | PathLike[str]) -> az.InferenceData:
+def load_inference_data(path: str | Path) -> az.InferenceData:
     """Load a NetCDF file into an ArviZ ``InferenceData`` object."""
     return az.from_netcdf(Path(path))
 
 
-def save_summary_table(df: pd.DataFrame, path: str | PathLike[str]) -> Path:
+def save_summary_table(df: pd.DataFrame, path: str | Path) -> Path:
     """Save a posterior summary table as a CSV file without the DataFrame index."""
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

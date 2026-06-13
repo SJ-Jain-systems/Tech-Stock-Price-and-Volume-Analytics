@@ -217,9 +217,7 @@ def plot_rolling_volatility(
             "simple_return"
         ].rolling(window=window, min_periods=window).std(ddof=1).reset_index(
             level=0, drop=True
-        ) * np.sqrt(
-            TRADING_DAYS_PER_YEAR
-        )
+        ) * np.sqrt(TRADING_DAYS_PER_YEAR)
 
     plot_df = plot_df.dropna(subset=["annualized_volatility"])
     fig, ax = plt.subplots(figsize=DEFAULT_FIGSIZE)

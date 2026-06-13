@@ -9,9 +9,9 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from src.config import DUCKDB_PATH, RAW_CSV_PATH, SQL_DIR
-from src.data_loader import load_raw_stock_data
-from src.sql_utils import execute_sql_file, get_connection
+from src.config import DUCKDB_PATH, RAW_CSV_PATH, SQL_DIR  # noqa: E402
+from src.data_loader import load_raw_stock_data  # noqa: E402
+from src.sql_utils import execute_sql_file, get_connection  # noqa: E402
 
 
 def main() -> None:
@@ -57,8 +57,12 @@ def main() -> None:
 
         execute_sql_file(connection, SQL_DIR / "02_clean_prices.sql")
 
-        raw_row_count = connection.execute("SELECT COUNT(*) FROM raw_prices").fetchone()[0]
-        clean_row_count = connection.execute("SELECT COUNT(*) FROM clean_prices").fetchone()[0]
+        raw_row_count = connection.execute(
+            "SELECT COUNT(*) FROM raw_prices"
+        ).fetchone()[0]
+        clean_row_count = connection.execute(
+            "SELECT COUNT(*) FROM clean_prices"
+        ).fetchone()[0]
         symbol_count = connection.execute(
             "SELECT COUNT(DISTINCT symbol) FROM clean_prices"
         ).fetchone()[0]
@@ -74,7 +78,11 @@ def main() -> None:
         print(f"  symbols: {symbol_count}")
         print(f"  date range: {min_date} to {max_date}")
         print("\nData quality summary:")
-        print(connection.execute("SELECT * FROM data_quality_summary").df().to_string(index=False))
+        print(
+            connection.execute("SELECT * FROM data_quality_summary")
+            .df()
+            .to_string(index=False)
+        )
     finally:
         connection.close()
 

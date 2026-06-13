@@ -72,9 +72,7 @@ def load_raw_stock_data(path: str | Path = RAW_CSV_PATH) -> DataFrame:
 
     _validate_positive_values(df, POSITIVE_VALUE_COLUMNS, csv_path)
 
-    return df.sort_values(["symbol", "date"], kind="mergesort").reset_index(
-        drop=True
-    )
+    return df.sort_values(["symbol", "date"], kind="mergesort").reset_index(drop=True)
 
 
 def summarize_dataset(df: DataFrame) -> dict[str, Any]:

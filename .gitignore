@@ -22,26 +22,26 @@ dist/
 **/.ipynb_checkpoints/
 
 # Local raw and derived data
-/data/raw/*
-/data/processed/*
-/data/database/*
+data/raw/
+data/processed/
+data/database/
 *.duckdb
 *.db
 *.sqlite
 *.sqlite3
 
 # Model artifacts and posterior samples
-/models/posterior_samples/*.nc
+models/posterior_samples/
 *.pkl
 *.pickle
 *.joblib
 
 # Generated reports and figures
-/reports/figures/*
+reports/figures/
 *.html
 *.pdf
 
-# Keep scaffold directories in git
+# Keep scaffold directories in git when already tracked
 !/data/raw/.gitkeep
 !/data/processed/.gitkeep
 !/data/database/.gitkeep
