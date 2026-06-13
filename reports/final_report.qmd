@@ -1,5 +1,5 @@
 ---
-title: "Bayesian Tech Equity Risk Lab"
+title: "Bayesian Market Signal Analytics"
 format:
   html:
     toc: true
@@ -12,7 +12,7 @@ execute:
   message: false
 ---
 
-# Bayesian Tech Equity Risk Lab
+# Bayesian Market Signal Analytics
 
 ## Abstract
 
@@ -381,7 +381,7 @@ Several extensions would make the project more realistic and informative:
 
 ## 12. Conclusion
 
-The Bayesian Tech Equity Risk Lab provides a structured way to analyze technology equity risk without pretending that noisy financial estimates are exact. The SQL pipeline creates a transparent foundation: adjusted-close returns, rolling volatility, drawdowns, downside indicators, annual metrics, aligned return panels, and portfolio inputs. The Bayesian models build on that foundation by representing expected returns, volatility, bad-day probabilities, regimes, and portfolio weights as uncertain quantities.
+The Bayesian Market Signal Analytics provides a structured way to analyze technology equity risk without pretending that noisy financial estimates are exact. The SQL pipeline creates a transparent foundation: adjusted-close returns, rolling volatility, drawdowns, downside indicators, annual metrics, aligned return panels, and portfolio inputs. The Bayesian models build on that foundation by representing expected returns, volatility, bad-day probabilities, regimes, and portfolio weights as uncertain quantities.
 
 That uncertainty is not a weakness of the analysis; it is the central result. Technology stocks can deliver exceptional returns, but their realized histories are shaped by heavy tails, changing volatility, large drawdowns, and unstable correlations. Bayesian methods make those features visible in a disciplined way. They help distinguish what the data strongly support from what remains uncertain, and they provide a more honest view of return, risk, and allocation than point estimates alone.
 

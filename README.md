@@ -1,4 +1,4 @@
-# Bayesian Tech Equity Risk Lab
+# Bayesian Market Signal Analytics
 
 A reproducible financial data science project for uncertainty-aware risk modeling and portfolio analysis of large-cap technology equities.
 
@@ -6,7 +6,7 @@ A reproducible financial data science project for uncertainty-aware risk modelin
 
 ## 1. Project overview
 
-**Bayesian Tech Equity Risk Lab** analyzes historical OHLCV equity data for a focused universe of major technology stocks. The project builds an end-to-end research workflow that starts with raw market data, validates and loads it into DuckDB, engineers financial features with SQL, and then applies Bayesian models to estimate risk and portfolio quantities with posterior uncertainty.
+**Bayesian Market Signal Analytics** analyzes historical OHLCV equity data for a focused universe of major technology stocks. The project builds an end-to-end research workflow that starts with raw market data, validates and loads it into DuckDB, engineers financial features with SQL, and then applies Bayesian models to estimate risk and portfolio quantities with posterior uncertainty.
 
 The workflow emphasizes:
 
@@ -206,7 +206,7 @@ The project computes and analyzes financial quantities that are commonly used in
 ## 10. Repository structure
 
 ```text
-Bayesian-Tech-Equity-Risk-Lab/
+Bayesian-Market-Signal-Analytics/
 ├── data/
 │   ├── raw/                         # Place tech_stocks.csv here locally
 │   ├── processed/                   # Generated feature datasets
