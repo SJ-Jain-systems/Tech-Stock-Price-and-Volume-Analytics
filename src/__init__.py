@@ -1,1 +1,1 @@
-"""Utilities for the bayesian-tech-equity-risk-lab research workflow."""
+"""Utilities for the bayesian-market-signal-analytics research workflow."""
