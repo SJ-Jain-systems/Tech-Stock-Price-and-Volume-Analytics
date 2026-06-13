@@ -122,7 +122,20 @@ Key SQL outputs include:
 - `portfolio_summary_inputs`
 - `return_correlation_matrix_long`
 
-## 7. Bayesian methodology
+## 7. Finance methodology conventions
+
+The project uses a small set of explicit finance conventions so the SQL outputs, notebooks, and report use the same language.
+
+- **Log returns vs. simple returns:** adjusted-close simple return is `adj_close_t / adj_close_{t-1} - 1`; adjusted-close log return is `ln(adj_close_t / adj_close_{t-1})`. Log returns are used for statistical modeling because they are additive through time and work naturally with likelihood-based models. Simple returns are used when an intuitive percentage change, portfolio compounding step, or downside threshold is easier to communicate.
+- **Annualization:** expected return is annualized as `mean daily log return × 252`; volatility is annualized as `daily log-return volatility × sqrt(252)`. The 252 factor approximates the number of U.S. trading days in a year.
+- **Drawdown:** the running peak is the highest adjusted close observed so far for a stock. Current drawdown is `adj_close / running_peak - 1`, and maximum drawdown is the most negative drawdown in the sample.
+- **Value at Risk (VaR):** historical 5% VaR is the 5th percentile of daily returns. Interpreted in return space, a VaR of `-4%` means that 5% of historical days were at or below a 4% loss.
+- **Conditional Value at Risk (CVaR):** historical 5% CVaR is the average return on days at or below the 5% VaR threshold. It estimates the expected loss conditional on being in the worst 5% of days.
+- **Sharpe-like ratio:** the descriptive risk-adjusted metric is `(annualized return - risk_free_rate) / annualized volatility`, with `risk_free_rate = 0` for simplicity. It should not be read as a formal Sharpe ratio unless an appropriate risk-free rate is included.
+- **Correlation and diversification:** pairwise correlations are computed on aligned return dates. Highly correlated technology stocks can move together during broad market or growth-stock stress, limiting diversification even when a portfolio holds several tickers.
+- **Tail risk:** the Bayesian return models prefer Student-t likelihoods over normal likelihoods because equity returns often have heavier tails than a Gaussian distribution, making extreme gains and losses more common than a normal model would imply.
+
+## 8. Bayesian methodology
 
 The Bayesian component is focused on estimating financial risk with full uncertainty distributions rather than single historical point estimates.
 
@@ -171,7 +184,7 @@ Primary outputs:
 - Uncertainty-aware efficient-frontier-style analysis.
 - Weight stability and concentration diagnostics.
 
-## 8. Financial metrics
+## 9. Financial metrics
 
 The project computes and analyzes financial quantities that are commonly used in empirical asset-risk research:
 
@@ -184,11 +197,13 @@ The project computes and analyzes financial quantities that are commonly used in
 - **Drawdown:** current adjusted close relative to the running historical peak.
 - **Maximum drawdown:** worst drawdown over a selected period.
 - **Bad-day frequency:** proportion of days below selected loss thresholds such as -2% and -5%.
-- **Annualized return and volatility:** daily log-return mean and standard deviation scaled by 252 trading days.
-- **Sharpe-like ratio:** annualized return divided by annualized volatility, used descriptively without implying a complete investment recommendation.
+- **Historical 5% VaR:** empirical 5th percentile of daily returns, interpreted as a lower-tail loss threshold.
+- **Historical 5% CVaR:** average daily return among observations at or below the 5% VaR threshold.
+- **Annualized return and volatility:** daily log-return mean and standard deviation scaled by 252 trading days and `sqrt(252)`, respectively.
+- **Sharpe-like ratio:** annualized excess return divided by annualized volatility, with `risk_free_rate = 0` in this project unless explicitly changed.
 - **Correlation matrix:** pairwise return correlations for aligned portfolio modeling dates.
 
-## 9. Repository structure
+## 10. Repository structure
 
 ```text
 Bayesian-Tech-Equity-Risk-Lab/
@@ -237,7 +252,7 @@ Bayesian-Tech-Equity-Risk-Lab/
 
 Generated files such as DuckDB databases, processed datasets, posterior samples, and figures are intended to remain local unless explicitly published.
 
-## 10. How to run the project
+## 11. How to run the project
 
 ### 1. Clone the repository
 
@@ -326,7 +341,7 @@ Then run the notebooks in this sequence:
 
 The first notebooks create the local DuckDB database and derived SQL tables/views used by later notebooks.
 
-## 11. Key outputs
+## 12. Key outputs
 
 Expected outputs from a complete project run include:
 
@@ -341,7 +356,7 @@ Expected outputs from a complete project run include:
 - Posterior predictive checks and model diagnostics.
 - Final summary dashboard and report-ready figures under `reports/`.
 
-## 12. Limitations
+## 13. Limitations
 
 This project is intentionally research-oriented and has several limitations:
 
@@ -354,7 +369,7 @@ This project is intentionally research-oriented and has several limitations:
 - Portfolio optimization results should be interpreted as scenario and uncertainty analysis, not actionable investment instructions.
 - Transaction costs, taxes, slippage, short-sale constraints, and investor-specific objectives may not be fully represented.
 
-## 13. Future work
+## 14. Future work
 
 Potential extensions include:
 
@@ -368,6 +383,6 @@ Potential extensions include:
 - Publish a static HTML report or interactive dashboard artifact.
 - Add continuous integration checks for notebook execution and SQL reproducibility.
 
-## 14. Disclaimer
+## 15. Disclaimer
 
 This project is for educational and research purposes only and is not financial advice. It does not recommend buying, selling, or holding any security. Financial markets involve risk, and historical analysis does not guarantee future results. Always consult a qualified financial professional before making investment decisions.

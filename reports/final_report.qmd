@@ -86,7 +86,7 @@ The log daily return is
 r_{i,t}^{log} = \log\left(\frac{P_{i,t}}{P_{i,t-1}}\right).
 \]
 
-Simple returns are intuitive for percentage changes and portfolio arithmetic. Log returns are convenient for statistical modeling because they are additive over time and often behave more regularly in probabilistic models.
+Simple returns are intuitive for percentage changes, portfolio compounding, and downside thresholds because they answer the question, "what percent did capital gain or lose?" Log returns are used for modeling in this project because they are additive over time and fit naturally into likelihood-based return models. When the daily moves are small the two measures are close, but the distinction matters for compounding and tail-loss interpretation.
 
 ### 3.3 Rolling volatility
 
@@ -135,10 +135,10 @@ and
 A Sharpe-like ratio is computed as
 
 \[
-\widehat{S}_i = \frac{\widehat{\mu}^{ann}_i}{\widehat{\sigma}^{ann}_i},
+\widehat{S}_i = \frac{\widehat{\mu}^{ann}_i - r_f}{\widehat{\sigma}^{ann}_i},
 \]
 
-with the important caveat that this version does not subtract a risk-free rate unless a risk-free return series is added.
+where this project sets the annual risk-free rate \(r_f = 0\) for simplicity. It is therefore a descriptive return-per-unit-risk measure, not a formal Sharpe ratio unless an appropriate risk-free rate is included.
 
 ### 3.6 Bad-day rate
 
@@ -155,6 +155,24 @@ The historical bad-day rate is
 \]
 
 The pipeline includes bad-day rates for common thresholds such as \(-2\%\) and \(-5\%\). These measures are easy to communicate and connect directly to the Bayesian downside-risk model.
+
+### 3.7 VaR, CVaR, correlation, and tail-risk conventions
+
+Historical 5% Value at Risk is the empirical 5th percentile of daily returns:
+
+\[
+\operatorname{VaR}_{5\%} = Q_{0.05}(r_t).
+\]
+
+It is interpreted as a lower-tail loss threshold: if \(\operatorname{VaR}_{5\%} = -0.04\), then 5% of historical daily returns were at or below a 4% loss. Conditional Value at Risk averages the observations beyond that threshold:
+
+\[
+\operatorname{CVaR}_{5\%} = E[r_t \mid r_t \le \operatorname{VaR}_{5\%}].
+\]
+
+CVaR is usually more informative for severe downside because it describes the expected loss conditional on already being in the worst 5% of days. Correlations are estimated on aligned return dates so portfolio calculations use the same observations across stocks. Because large technology equities often share growth, liquidity, and market-sentiment exposures, high positive correlations can limit diversification precisely when broad technology stress dominates stock-specific variation.
+
+Tail risk is handled explicitly in the Bayesian models. A normal likelihood can make extreme return observations look implausibly rare and can understate lower-tail uncertainty. Student-t likelihoods place more probability mass in the tails through a degrees-of-freedom parameter, so they are a more realistic baseline for daily equity returns with crisis days, earnings shocks, and other outliers.
 
 ## 4. Exploratory Financial Analysis
 
